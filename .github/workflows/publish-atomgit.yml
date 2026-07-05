@@ -103,13 +103,13 @@ jobs:
 
           echo "$RESPONSE"
 
-          RELEASE_ID=$(echo "$RESPONSE" | jq -r '.id // empty')
-          if [ -z "$RELEASE_ID" ]; then
+          RESP_TAG=$(echo "$RESPONSE" | jq -r '.tag_name // empty')
+          if [ -z "$RESP_TAG" ]; then
             echo "Failed to create atomgit release"
             exit 1
           fi
 
-          echo "release_id=$RELEASE_ID" >> $GITHUB_OUTPUT
+          echo "AtomGit release $RESP_TAG created"
 
       - name: Upload assets to atomgit
         run: |
