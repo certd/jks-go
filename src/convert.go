@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/pavel-v-chernykh/keystore-go/v4"
-	"golang.org/x/crypto/pkcs12"
+	"software.sslmate.com/src/go-pkcs12"
 )
 
 func convertPKCS12ToJKS(srcFile, srcPass, dstFile, dstPass, alias string) error {
