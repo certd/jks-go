@@ -23,12 +23,7 @@ jobs:
           git config --global user.name "xiaojunnuo"
           git config --global user.email "xiaojunnuo@qq.com"
 
-      - name: Set git token
-        uses: de-vri-es/setup-git-credentials@v2
-        with:
-          credentials: https://greper:${{ secrets.ATOMGIT_TOKEN }}@atomgit.com
-
       - name: Push to atomgit
         run: |
-          git remote add upstream https://atomgit.com/certd/jks-go
-          git push --set-upstream upstream main --tags
+          git remote add atomgit https://greper:${{ secrets.ATOMGIT_TOKEN }}@atomgit.com/certd/jks-go
+          git push --set-upstream atomgit main --tags

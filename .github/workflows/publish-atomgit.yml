@@ -65,8 +65,8 @@ jobs:
 
       - name: Push to atomgit
         run: |
-          git remote add upstream https://greper:${{ secrets.ATOMGIT_TOKEN }}@atomgit.com/certd/jks-go
-          git push --set-upstream upstream main --tags
+          git remote add atomgit https://greper:${{ secrets.ATOMGIT_TOKEN }}@atomgit.com/certd/jks-go
+          git push --set-upstream atomgit main --tags
 
       - name: Create atomgit release
         id: atomgit_release
