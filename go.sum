@@ -1,0 +1,6 @@
+github.com/pavel-v-chernykh/keystore-go/v4 v4.3.0 h1:TVckDDIKzWo9/cPdsvyikdmnnKIPeWgnGoekhQM5zBc=
+github.com/pavel-v-chernykh/keystore-go/v4 v4.3.0/go.mod h1:VxOBKEAW8/EJjil9qwfvVDSljDW0DCoZMD4ezsq9n8U=
+golang.org/x/crypto v0.52.0 h1:RMs7fP2rXdep0CftQlK8Uf+kibLm7qkCcradZWYz988=
+golang.org/x/crypto v0.52.0/go.mod h1:1QgfPxDqh0T2M/elOJtp9RvuR95kVjir0e6/BvEmGbc=
+software.sslmate.com/src/go-pkcs12 v0.4.0 h1:H2g08FrTvSFKUj+D309j1DPfk5APnIdAQAB8aEykJ5k=
+software.sslmate.com/src/go-pkcs12 v0.4.0/go.mod h1:Qiz0EyvDRJjjxGyUQa2cCNZn/wMyzrRJ/qcDXOQazLI=
