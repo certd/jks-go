@@ -9,7 +9,7 @@
 
 ## 与 keytool 的对比
 
-只需将脚本中的 `keytool` 替换为 `jks-go`，参数原样保留：
+只需将脚本中的 `keytool` 替换为 `jks-go`，参数原样保留。同时支持位置命令和短别名两种便捷写法：
 
 ```bash
 # 原 keytool 命令
@@ -21,12 +21,21 @@ keytool -importkeystore \
   -deststoretype JKS \
   -deststorepass "password"
 
-# 替换为 jks-go（参数一模一样）
+# 替换为 jks-go（方式一：与 keytool 参数一模一样）
 jks-go -importkeystore \
   -srckeystore cert.p12 \
   -srcstoretype PKCS12 \
   -srcstorepass "password" \
   -destkeystore keystore.jks \
+  -deststoretype JKS \
+  -deststorepass "password"
+
+# 替换为 jks-go（方式二：位置命令 + 短别名）
+jks-go import \
+  -src cert.p12 \
+  -srcstoretype PKCS12 \
+  -srcstorepass "password" \
+  -dest keystore.jks \
   -deststoretype JKS \
   -deststorepass "password"
 ```
@@ -110,13 +119,13 @@ jks-go -importkeystore \
 
 | 参数 | keytool 原版？ | 必需 | 说明 |
 |---|---|---|---|
-| `-importkeystore` | 是 | 是 | 导入密钥库模式 |
-| `-srckeystore` | 是 | 是 | 源文件路径 |
+| `-importkeystore` | 是 | 是 | 导入密钥库模式（也可用位置命令 `import`） |
+| `-srckeystore` | 是 | 是 | 源文件路径（别名 `-src`） |
 | `-srcstoretype` | 是 | 是 | 源类型：`PKCS12` 或 `PEM`（扩展） |
 | `-srcstorepass` | 是 | 是* | 源密钥库密码 |
 | `-srckeypass` | 是 | 否 | 源密钥密码（默认同 srcstorepass） |
 | `-srckeyfile` | **新增** | 否 | PEM 私钥文件路径（证书与私钥分离时使用） |
-| `-destkeystore` | 是 | 是 | 目标 JKS 文件路径 |
+| `-destkeystore` | 是 | 是 | 目标 JKS 文件路径（别名 `-dest`） |
 | `-deststoretype` | 是 | 否 | 目标类型，固定为 `JKS` |
 | `-deststorepass` | 是 | 是 | 目标 JKS 密钥库密码 |
 | `-destkeypass` | 是 | 否 | 目标密钥密码（默认同 deststorepass） |
