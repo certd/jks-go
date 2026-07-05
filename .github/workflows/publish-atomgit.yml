@@ -1,0 +1,113 @@
+name: publish-atomgit
+
+on:
+  workflow_run:
+    workflows: ['Release']
+    types:
+      - completed
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  publish-atomgit:
+    runs-on: ubuntu-latest
+    if: |
+      github.event_name == 'workflow_dispatch' ||
+      github.event.workflow_run.conclusion == 'success'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          lfs: true
+
+      - name: Set git user
+        run: |
+          git config --global user.name "xiaojunnuo"
+          git config --global user.email "xiaojunnuo@qq.com"
+
+      - name: Get version
+        id: get_version
+        run: |
+          VERSION=$(git describe --tags --abbrev=0 | sed 's/^v//')
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Version: $VERSION"
+
+      - name: Download release assets
+        id: download_assets
+        run: |
+          TAG="v${{ steps.get_version.outputs.version }}"
+          RELEASE_ID=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            "https://api.github.com/repos/${{ github.repository }}/releases/tags/$TAG" \
+            | jq -r '.id')
+
+          if [ "$RELEASE_ID" = "null" ]; then
+            echo "Release $TAG not found"
+            exit 1
+          fi
+
+          echo "release_id=$RELEASE_ID" >> $GITHUB_OUTPUT
+
+          mkdir -p release-assets
+
+          ASSETS=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            "https://api.github.com/repos/${{ github.repository }}/releases/$RELEASE_ID/assets")
+
+          echo "$ASSETS" | jq -r '.[].browser_download_url' | while read url; do
+            echo "Downloading $url"
+            curl -sL -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+              -o "release-assets/$(basename "$url")" "$url"
+          done
+
+          ls -la release-assets/
+
+      - name: Push to atomgit
+        run: |
+          git remote add upstream https://greper:${{ secrets.ATOMGIT_TOKEN }}@atomgit.com/certd/jks-go
+          git push --set-upstream upstream main --tags
+
+      - name: Create atomgit release
+        id: atomgit_release
+        run: |
+          VERSION="${{ steps.get_version.outputs.version }}"
+          TAG="v${VERSION}"
+
+          RESPONSE=$(curl -s -X POST \
+            -H "Authorization: token ${{ secrets.ATOMGIT_TOKEN }}" \
+            -H "Content-Type: application/json" \
+            -d "{
+              \"tag_name\": \"${TAG}\",
+              \"name\": \"${TAG}\",
+              \"body\": \"Release ${TAG}\n\nSee https://github.com/certd/jks-go/releases/tag/${TAG} for details.\",
+              \"draft\": false,
+              \"prerelease\": false
+            }" \
+            "https://atomgit.com/api/v1/repos/certd/jks-go/releases")
+
+          echo "$RESPONSE"
+
+          RELEASE_ID=$(echo "$RESPONSE" | jq -r '.id')
+          if [ "$RELEASE_ID" = "null" ]; then
+            echo "Failed to create atomgit release"
+            exit 1
+          fi
+
+          echo "release_id=$RELEASE_ID" >> $GITHUB_OUTPUT
+
+      - name: Upload assets to atomgit
+        run: |
+          RELEASE_ID="${{ steps.atomgit_release.outputs.release_id }}"
+
+          for file in release-assets/*; do
+            filename=$(basename "$file")
+            echo "Uploading $filename ..."
+            curl -s -X POST \
+              -H "Authorization: token ${{ secrets.ATOMGIT_TOKEN }}" \
+              -H "Content-Type: application/octet-stream" \
+              --data-binary "@$file" \
+              "https://atomgit.com/api/v1/repos/certd/jks-go/releases/$RELEASE_ID/assets?name=$filename"
+          done
+
+          echo "All assets uploaded to atomgit release"
