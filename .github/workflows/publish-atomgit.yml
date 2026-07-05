@@ -96,6 +96,8 @@ jobs:
 
           RESPONSE=$(curl -s -X POST \
             -H "Content-Type: application/json" \
+            -H "Accept: application/json" \
+            -H "User-Agent: axios/1.6.0" \
             -d "$JSON_BODY" \
             "https://api.atomgit.com/api/v5/repos/certd/jks-go/releases?access_token=${{ secrets.ATOMGIT_TOKEN }}")
 
@@ -119,6 +121,8 @@ jobs:
             echo "Uploading $filename ..."
 
             UPLOAD_RESPONSE=$(curl -s -X GET \
+              -H "Accept: application/json" \
+              -H "User-Agent: axios/1.6.0" \
               "https://api.atomgit.com/api/v5/repos/certd/jks-go/releases/$TAG/upload_url?access_token=${{ secrets.ATOMGIT_TOKEN }}&file_name=$filename")
 
             UPLOAD_URL=$(echo "$UPLOAD_RESPONSE" | jq -r '.url // empty')
