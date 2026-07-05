@@ -6,6 +6,11 @@ on:
     types:
       - completed
   workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version (without v prefix)'
+        required: true
+        type: string
 
 permissions:
   contents: read
@@ -21,7 +26,6 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          lfs: true
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -36,14 +40,20 @@ jobs:
       - name: Get version
         id: get_version
         run: |
-          VERSION=$(git describe --tags --abbrev=0 | sed 's/^v//')
+          if [ -n "${{ inputs.version }}" ]; then
+            VERSION="${{ inputs.version }}"
+          else
+            VERSION=$(git describe --tags --abbrev=0 | sed 's/^v//')
+          fi
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "Version: $VERSION"
 
-      - name: Download release assets
+      - name: Download release assets from GitHub
         run: |
           TAG="v${{ steps.get_version.outputs.version }}"
+
           RELEASE_ID=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Accept: application/vnd.github+json" \
             "https://api.github.com/repos/${{ github.repository }}/releases/tags/$TAG" \
             | jq -r '.id')
 
@@ -52,20 +62,22 @@ jobs:
             exit 1
           fi
 
-          mkdir -p release-assets
+          mkdir -p dist
 
           ASSETS=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Accept: application/vnd.github+json" \
             "https://api.github.com/repos/${{ github.repository }}/releases/$RELEASE_ID/assets")
 
-          echo "$ASSETS" | jq -r '.[].browser_download_url' | while read url; do
-            echo "Downloading $url"
+          echo "$ASSETS" | jq -r '.[] | "\(.id) \(.name)"' | while read id name; do
+            echo "Downloading $name ..."
             curl -sL -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-              -o "release-assets/$(basename "$url")" "$url"
+              -H "Accept: application/octet-stream" \
+              -o "dist/$name" \
+              "https://api.github.com/repos/${{ github.repository }}/releases/assets/$id"
+            ls -la "dist/$name"
           done
 
-          ls -la release-assets/
-
-      - name: Push to atomgit
+      - name: Push code to atomgit
         run: |
           git remote add atomgit https://greper:${{ secrets.ATOMGIT_TOKEN }}@atomgit.com/certd/jks-go
           git push atomgit main --tags --force
@@ -74,10 +86,10 @@ jobs:
         run: npm install
         working-directory: scripts
 
-      - name: Publish to atomgit
+      - name: Publish release to atomgit
         env:
           ATOMGIT_TOKEN: ${{ secrets.ATOMGIT_TOKEN }}
           VERSION: ${{ steps.get_version.outputs.version }}
-          ASSETS_DIR: ../release-assets
+          ASSETS_DIR: ../dist
         run: node publish-atomgit.js
         working-directory: scripts
