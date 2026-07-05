@@ -23,40 +23,48 @@ function getVersion() {
 
 function getChangelog(version) {
   try {
-    const tag = `v${version}`
-    let prevTag
-    try {
-      prevTag = execSync(`git describe --tags --abbrev=0 ${tag}^`, { encoding: 'utf-8' }).trim()
-    } catch (e) {
-      prevTag = ''
+    const tags = execSync('git tag --sort=-v:refname', { encoding: 'utf-8' }).trim().split('\n').filter(Boolean)
+    const currentTag = `v${version}`
+    const idx = tags.indexOf(currentTag)
+    if (idx >= 0 && idx < tags.length - 1) {
+      const prevTag = tags[idx + 1]
+      const log = execSync(`git log --pretty=format:"- %s" ${prevTag}..${currentTag}`, { encoding: 'utf-8' }).trim()
+      return log || `Release ${currentTag}`
     }
-    const range = prevTag ? `${prevTag}..${tag}` : tag
-    const log = execSync(`git log --pretty=format:"- %s" ${range}`, { encoding: 'utf-8' }).trim()
-    return log || `Release ${tag}`
+    const log = execSync(`git log --pretty=format:"- %s" -1`, { encoding: 'utf-8' }).trim()
+    return log || `Release ${currentTag}`
   } catch (e) {
     return `Release v${version}`
   }
 }
 
 async function createRelease(versionTitle, content) {
-  const response = await axios.request({
-    method: 'POST',
-    url: `https://api.atomgit.com/api/v5/repos/${Owner}/${Repo}/releases`,
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    params: {
-      access_token: AtomgitAccessToken,
-    },
-    data: {
-      tag_name: `v${versionTitle}`,
-      name: `v${versionTitle}`,
-      body: content,
-      target_commitish: TargetBranch,
-    },
-  })
-  console.log('createRelease success')
-  return response.data
+  try {
+    const response = await axios.request({
+      method: 'POST',
+      url: `https://api.atomgit.com/api/v5/repos/${Owner}/${Repo}/releases`,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      params: {
+        access_token: AtomgitAccessToken,
+      },
+      data: {
+        tag_name: `v${versionTitle}`,
+        name: `v${versionTitle}`,
+        body: content,
+        target_commitish: TargetBranch,
+      },
+    })
+    console.log('createRelease success')
+    return response.data
+  } catch (error) {
+    if (error?.response?.status === 409) {
+      console.log('Release already exists, skip creation')
+      return null
+    }
+    throw error
+  }
 }
 
 async function getUploadUrl(versionTitle, fileName) {
