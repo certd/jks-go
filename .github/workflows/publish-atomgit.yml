@@ -133,11 +133,12 @@ jobs:
               continue
             fi
 
-            UPLOAD_HEADERS=$(echo "$UPLOAD_RESPONSE" | jq -r '.headers // {}')
-
             CONTENT_LENGTH=$(wc -c < "$file")
 
+            CURL_HEADERS=$(echo "$UPLOAD_RESPONSE" | jq -r '.headers // {} | to_entries[] | "-H \(.key): \(.value)"' | tr '\n' ' ')
+
             curl -s -X PUT \
+              $CURL_HEADERS \
               -H "Content-Length: $CONTENT_LENGTH" \
               --data-binary "@$file" \
               "$UPLOAD_URL"
