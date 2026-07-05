@@ -26,4 +26,4 @@ jobs:
       - name: Push to atomgit
         run: |
           git remote add atomgit https://greper:${{ secrets.ATOMGIT_TOKEN }}@atomgit.com/certd/jks-go
-          git push --set-upstream atomgit main --tags
+          git push atomgit main --tags --force
