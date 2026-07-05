@@ -75,20 +75,14 @@ async function getUploadUrl(versionTitle, fileName) {
   return response.data
 }
 
-async function uploadFile(url, headers, filePath) {
-  const fileData = fs.readFileSync(filePath)
+async function uploadFile(url, headers, data) {
   const response = await axios.request({
     method: 'PUT',
     url,
     headers,
-    data: fileData,
+    data,
     maxBodyLength: Infinity,
-    validateStatus: status => status < 500,
   })
-  if (response.status >= 400) {
-    const body = typeof response.data === 'string' ? response.data.slice(0, 200) : JSON.stringify(response.data).slice(0, 200)
-    throw new Error(`Upload failed with status ${response.status}: ${body}`)
-  }
   return response.data
 }
 
@@ -111,16 +105,23 @@ async function publishToAtomgit() {
 
     for (const fileName of files) {
       const filePath = path.join(AssetsDir, fileName)
-      console.log(`Uploading ${fileName} (${fs.statSync(filePath).size} bytes)...`)
+      const stat = fs.statSync(filePath)
+      const fileSizeMB = (stat.size / 1024 / 1024).toFixed(2)
+      console.log(`Uploading ${fileName} (${stat.size} bytes / ${fileSizeMB} MB)...`)
 
-      const uploadUrl = await getUploadUrl(versionTitle, fileName)
+      const uploadUrlResponse = await getUploadUrl(versionTitle, fileName)
 
-      if (!uploadUrl?.url) {
-        console.error(`  Invalid upload URL response:`, JSON.stringify(uploadUrl).slice(0, 200))
+      if (!uploadUrlResponse?.url) {
+        console.error(`  Invalid upload URL response:`, JSON.stringify(uploadUrlResponse).slice(0, 200))
         continue
       }
 
-      await uploadFile(uploadUrl.url, uploadUrl.headers, filePath)
+      console.log(`  Upload URL prefix: ${uploadUrlResponse.url.slice(0, 80)}...`)
+
+      const fileData = fs.createReadStream(filePath)
+      uploadUrlResponse.headers['Content-Length'] = stat.size
+
+      await uploadFile(uploadUrlResponse.url, uploadUrlResponse.headers, fileData)
       console.log(`  ${fileName} done`)
     }
 
