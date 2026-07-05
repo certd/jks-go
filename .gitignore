@@ -17,6 +17,9 @@
 .DS_Store
 Thumbs.db
 
+# Node
+scripts/node_modules/
+
 # Temp files
 *.p12
 *.jks
