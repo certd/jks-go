@@ -75,8 +75,10 @@ jobs:
           TAG="v${VERSION}"
 
           RESPONSE=$(curl -s -X POST \
-            -H "Authorization: token ${{ secrets.ATOMGIT_TOKEN }}" \
+            -H "Authorization: Bearer ${{ secrets.ATOMGIT_TOKEN }}" \
             -H "Content-Type: application/json" \
+            -H "Accept: application/json" \
+            -H "User-Agent: GitHub-Actions-Sync" \
             -d "{
               \"tag_name\": \"${TAG}\",
               \"name\": \"${TAG}\",
@@ -104,8 +106,10 @@ jobs:
             filename=$(basename "$file")
             echo "Uploading $filename ..."
             curl -s -X POST \
-              -H "Authorization: token ${{ secrets.ATOMGIT_TOKEN }}" \
+              -H "Authorization: Bearer ${{ secrets.ATOMGIT_TOKEN }}" \
               -H "Content-Type: application/octet-stream" \
+              -H "Accept: application/json" \
+              -H "User-Agent: GitHub-Actions-Sync" \
               --data-binary "@$file" \
               "https://atomgit.com/api/v1/repos/certd/jks-go/releases/$RELEASE_ID/assets?name=$filename"
           done
