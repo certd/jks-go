@@ -29,17 +29,8 @@ jobs:
     strategy:
       matrix:
         include:
-          - goos: windows
-            goarch: amd64
-            ext: .exe
-          - goos: windows
-            goarch: 386
-            ext: .exe
           - goos: linux
             goarch: amd64
-            ext: ""
-          - goos: linux
-            goarch: 386
             ext: ""
           - goos: linux
             goarch: arm64
@@ -47,12 +38,6 @@ jobs:
           - goos: linux
             goarch: arm
             goarm: 7
-            ext: ""
-          - goos: darwin
-            goarch: amd64
-            ext: ""
-          - goos: darwin
-            goarch: arm64
             ext: ""
     steps:
       - name: Checkout
@@ -98,11 +83,6 @@ jobs:
         with:
           path: artifacts
           merge-multiple: true
-
-      - name: Generate checksums
-        run: |
-          cd artifacts
-          shasum -a 256 * > checksums.txt
 
       - name: Create Release
         uses: softprops/action-gh-release@v1

@@ -21,14 +21,9 @@ clean:
 	rm -rf $(DIST_DIR)
 
 release-all:
-	$(MAKE) release GOOS=windows GOARCH=amd64 EXT=.exe
-	$(MAKE) release GOOS=windows GOARCH=386 EXT=.exe
 	$(MAKE) release GOOS=linux GOARCH=amd64
-	$(MAKE) release GOOS=linux GOARCH=386
 	$(MAKE) release GOOS=linux GOARCH=arm64
 	$(MAKE) release GOOS=linux GOARCH=arm GOARM=7
-	$(MAKE) release GOOS=darwin GOARCH=amd64
-	$(MAKE) release GOOS=darwin GOARCH=arm64
 
 release:
 	@mkdir -p $(DIST_DIR)
