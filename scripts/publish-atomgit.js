@@ -45,9 +45,7 @@ async function createRelease(versionTitle, content) {
       url: `https://api.atomgit.com/api/v5/repos/${Owner}/${Repo}/releases`,
       headers: {
         'Content-Type': 'application/json',
-      },
-      params: {
-        access_token: AtomgitAccessToken,
+        'PRIVATE-TOKEN': AtomgitAccessToken,
       },
       data: {
         tag_name: `v${versionTitle}`,
@@ -73,9 +71,9 @@ async function getUploadUrl(versionTitle, fileName) {
     url: `https://api.atomgit.com/api/v5/repos/${Owner}/${Repo}/releases/v${versionTitle}/upload_url`,
     headers: {
       'Content-Type': 'application/json',
+      'PRIVATE-TOKEN': AtomgitAccessToken,
     },
     params: {
-      access_token: AtomgitAccessToken,
       file_name: fileName,
     },
   })

@@ -18,7 +18,7 @@ func convertPKCS12ToJKS(srcFile, srcPass, dstFile, dstPass, alias string) error 
 		return fmt.Errorf("failed to read PKCS12 file: %w", err)
 	}
 
-	privateKey, cert, err := pkcs12.Decode(pfxData, srcPass)
+	privateKey, cert, caCerts, err := pkcs12.DecodeChain(pfxData, srcPass)
 	if err != nil {
 		if errors.Is(err, pkcs12.ErrIncorrectPassword) || errors.Is(err, pkcs12.ErrDecryption) {
 			return fmt.Errorf("incorrect password for PKCS12 file")
@@ -26,7 +26,7 @@ func convertPKCS12ToJKS(srcFile, srcPass, dstFile, dstPass, alias string) error 
 		return fmt.Errorf("failed to decode PKCS12: %w", err)
 	}
 
-	return writeJKS(privateKey, cert, dstFile, dstPass, alias)
+	return writeJKS(privateKey, cert, caCerts, dstFile, dstPass, alias)
 }
 
 func convertPEMToJKS(certFile, keyFile, srcPass, dstFile, dstPass, alias string) error {
@@ -55,7 +55,7 @@ func convertPEMToJKS(certFile, keyFile, srcPass, dstFile, dstPass, alias string)
 		return fmt.Errorf("failed to parse private key: %w", err)
 	}
 
-	return writeJKS(privateKey, cert, dstFile, dstPass, alias)
+	return writeJKS(privateKey, cert, nil, dstFile, dstPass, alias)
 }
 
 func parseCertificate(data []byte) (*x509.Certificate, error) {
@@ -120,7 +120,7 @@ func parsePrivateKey(data []byte, password string) (interface{}, error) {
 	return nil, errors.New("no private key found in PEM data")
 }
 
-func writeJKS(privateKey interface{}, cert *x509.Certificate, dstFile, dstPass, alias string) error {
+func writeJKS(privateKey interface{}, cert *x509.Certificate, caCerts []*x509.Certificate, dstFile, dstPass, alias string) error {
 	if alias == "" {
 		alias = cert.Subject.CommonName
 	}
@@ -133,15 +133,23 @@ func writeJKS(privateKey interface{}, cert *x509.Certificate, dstFile, dstPass, 
 		return fmt.Errorf("failed to marshal private key to PKCS8: %w", err)
 	}
 
-	entry := keystore.PrivateKeyEntry{
-		CreationTime: time.Now(),
-		PrivateKey:   pkcs8Key,
-		CertificateChain: []keystore.Certificate{
-			{
-				Type:    "X.509",
-				Content: cert.Raw,
-			},
+	chain := []keystore.Certificate{
+		{
+			Type:    "X.509",
+			Content: cert.Raw,
 		},
+	}
+	for _, ca := range caCerts {
+		chain = append(chain, keystore.Certificate{
+			Type:    "X.509",
+			Content: ca.Raw,
+		})
+	}
+
+	entry := keystore.PrivateKeyEntry{
+		CreationTime:     time.Now(),
+		PrivateKey:       pkcs8Key,
+		CertificateChain: chain,
 	}
 
 	ks := keystore.New()

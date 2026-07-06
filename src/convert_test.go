@@ -67,6 +67,26 @@ func createTestP12(cert *x509.Certificate, key *rsa.PrivateKey, password string)
 	return tmpFile.Name(), nil
 }
 
+func createTestP12WithCA(cert *x509.Certificate, key *rsa.PrivateKey, caCerts []*x509.Certificate, password string) (string, error) {
+	pfxData, err := pkcs12.Encode(rand.Reader, key, cert, caCerts, password)
+	if err != nil {
+		return "", err
+	}
+
+	tmpFile, err := os.CreateTemp("", "test-ca-*.p12")
+	if err != nil {
+		return "", err
+	}
+	defer tmpFile.Close()
+
+	if _, err := tmpFile.Write(pfxData); err != nil {
+		os.Remove(tmpFile.Name())
+		return "", err
+	}
+
+	return tmpFile.Name(), nil
+}
+
 func createTestPEMFiles(cert *x509.Certificate, key *rsa.PrivateKey) (certFile, keyFile string, err error) {
 	certPEM := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: cert.Raw})
 
@@ -386,5 +406,59 @@ func TestParsePrivateKey(t *testing.T) {
 
 	if parsed == nil {
 		t.Fatal("parsed key is nil")
+	}
+}
+
+func TestPKCS12WithCAChain(t *testing.T) {
+	cert, key, err := generateTestCertAndKey()
+	if err != nil {
+		t.Fatalf("failed to generate test cert: %v", err)
+	}
+
+	caCert, _, err := generateTestCertAndKey()
+	if err != nil {
+		t.Fatalf("failed to generate CA cert: %v", err)
+	}
+
+	password := "testpassword"
+
+	p12File, err := createTestP12WithCA(cert, key, []*x509.Certificate{caCert}, password)
+	if err != nil {
+		t.Fatalf("failed to create test p12 with CA: %v", err)
+	}
+	defer os.Remove(p12File)
+
+	jksFile, err := os.CreateTemp("", "test-ca-*.jks")
+	if err != nil {
+		t.Fatalf("failed to create temp jks: %v", err)
+	}
+	jksPath := jksFile.Name()
+	jksFile.Close()
+	defer os.Remove(jksPath)
+
+	err = convertPKCS12ToJKS(p12File, password, jksPath, password, "")
+	if err != nil {
+		t.Fatalf("convertPKCS12ToJKS with CA chain failed: %v", err)
+	}
+
+	ks := keystore.New()
+	f, err := os.Open(jksPath)
+	if err != nil {
+		t.Fatalf("failed to open jks: %v", err)
+	}
+	defer f.Close()
+
+	if err := ks.Load(f, []byte(password)); err != nil {
+		t.Fatalf("failed to load jks: %v", err)
+	}
+
+	entry, err := ks.GetPrivateKeyEntry("test.example.com", []byte(password))
+	if err != nil {
+		t.Fatalf("failed to get private key entry: %v", err)
+	}
+
+	chain := entry.CertificateChain
+	if len(chain) < 2 {
+		t.Fatalf("expected at least 2 certs in chain (leaf + CA), got %d", len(chain))
 	}
 }
