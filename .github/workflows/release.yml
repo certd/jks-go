@@ -29,6 +29,12 @@ jobs:
     strategy:
       matrix:
         include:
+          - goos: windows
+            goarch: amd64
+            ext: .exe
+          - goos: windows
+            goarch: arm64
+            ext: .exe
           - goos: linux
             goarch: amd64
             ext: ""
@@ -38,6 +44,12 @@ jobs:
           - goos: linux
             goarch: arm
             goarm: 7
+            ext: ""
+          - goos: darwin
+            goarch: amd64
+            ext: ""
+          - goos: darwin
+            goarch: arm64
             ext: ""
     steps:
       - name: Checkout

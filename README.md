@@ -44,7 +44,7 @@ jks-go import \
 
 - **PKCS12 → JKS**：完全兼容 keytool 的参数风格
 - **PEM → JKS**：支持组合 PEM 文件和证书/私钥分离两种方式（扩展功能）
-- **跨平台**：支持 Windows、Linux、macOS，覆盖 x86_64、i386、ARM64、ARMv7 共 8 种架构
+- **跨平台**：支持 Windows、Linux、macOS，覆盖 x86_64、ARM64、ARMv7 共 7 种架构
 - **纯静态编译**：`CGO_ENABLED=0`，无 glibc 依赖，单文件部署
 
 ## 安装方式
@@ -56,9 +56,8 @@ jks-go import \
 | 平台 | 架构 | 文件 |
 |---|---|---|
 | Windows | x64 | `jks-go_windows_amd64.exe` |
-| Windows | x86 | `jks-go_windows_386.exe` |
+| Windows | ARM64 | `jks-go_windows_arm64.exe` |
 | Linux | x86_64 | `jks-go_linux_amd64` |
-| Linux | x86 | `jks-go_linux_386` |
 | Linux | ARM64 | `jks-go_linux_arm64` |
 | Linux | ARMv7 | `jks-go_linux_arm_armv7` |
 | macOS | Intel | `jks-go_darwin_amd64` |
@@ -76,9 +75,9 @@ go install github.com/certd/jks-go@latest
 git clone https://github.com/certd/jks-go.git
 cd jks-go
 
-make build      # 编译当前平台
-make release-all # 编译全部 8 个平台
-make test        # 运行测试
+make build       # 编译当前平台
+make release-all  # 编译全部 7 个平台
+make test         # 运行测试
 ```
 
 ## 快速开始
